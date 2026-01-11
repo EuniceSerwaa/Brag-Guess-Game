@@ -4,27 +4,60 @@ import pandas as pd
 import time
 import os
 
-st.set_page_config(page_title="Brag & Guess – Ultimate Edition", layout="centered")
+# ---------------- PAGE CONFIG ----------------
+st.set_page_config(
+    page_title="Brag & Guess",
+    page_icon="🎯",
+    layout="centered"
+)
 
-# ---------------- CSS ----------------
+# ---------------- STYLES ----------------
 st.markdown("""
 <style>
+body {
+    background-color: #0f172a;
+    color: #e5e7eb;
+}
+
+.card {
+    background: #020617;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 0 30px rgba(56,189,248,0.15);
+    margin-bottom: 25px;
+}
+
+.title {
+    font-size: 42px;
+    font-weight: 800;
+    text-align: center;
+    color: #38bdf8;
+}
+
+.subtitle {
+    text-align: center;
+    color: #94a3b8;
+    margin-bottom: 30px;
+}
+
 .glow {
-    font-size: 30px;
+    font-size: 34px;
     font-weight: bold;
-    color: white;
+    color: #22d3ee;
     text-align: center;
     animation: glow 1.5s ease-in-out infinite alternate;
 }
+
 @keyframes glow {
-    from { text-shadow: 0 0 10px #00ffcc; }
-    to { text-shadow: 0 0 35px #ff00ff; }
+    from { text-shadow: 0 0 10px #22d3ee; }
+    to { text-shadow: 0 0 35px #9333ea; }
 }
 
 .shake {
     font-size: 22px;
     animation: shake 0.5s infinite;
 }
+
 @keyframes shake {
     0% { transform: translateX(0); }
     25% { transform: translateX(-5px); }
@@ -35,55 +68,66 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title("🎯 Brag & Guess – Ultimate Edition ✨")
-st.write("Brag about your skills. Race the clock. Get humbled 😏")
-
-# ---------------- LEADERBOARD ----------------
+# ---------------- LEADERBOARD FILE ----------------
 LEADERBOARD_FILE = "leaderboard.csv"
 
 if not os.path.exists(LEADERBOARD_FILE):
     pd.DataFrame(
-        columns=["Nickname", "Level", "Attempts", "Time(s)"]
+        columns=["Player", "Level", "Attempts", "Time(s)"]
     ).to_csv(LEADERBOARD_FILE, index=False)
 
 # ---------------- SESSION STATE ----------------
 if "started" not in st.session_state:
     st.session_state.started = False
 
+# ---------------- LANDING ----------------
+with st.container():
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.markdown("<div class='title'>🎯 Brag & Guess</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='subtitle'>Brag big. Guess smart. Get humbled 😏</div>",
+        unsafe_allow_html=True
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+
 # ---------------- PLAYER SETUP ----------------
-st.subheader("👤 Player Setup")
+with st.container():
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
 
-nickname = st.text_input("Enter your nickname")
-avatar = st.selectbox(
-    "Choose your avatar",
-    ["😎", "🔥", "🎯", "👑", "🐉", "🧠"]
-)
+    st.subheader("👤 Player Setup")
 
-level = st.selectbox(
-    "Choose Difficulty",
-    ["🟢 Easy", "🟡 Medium", "🔴 Hard"]
-)
+    nickname = st.text_input("Nickname")
+    avatar = st.selectbox("Choose your avatar", ["😎", "🔥", "🎯", "👑", "🐉", "🧠"])
 
-brag = st.selectbox(
-    "How many attempts will you win in? 😎",
-    ["1 attempt", "2 attempts", "3 attempts"]
-)
+    level = st.selectbox(
+        "Difficulty",
+        ["🟢 Easy", "🟡 Medium", "🔴 Hard"]
+    )
+
+    brag = st.selectbox(
+        "How many attempts will you win in? 😏",
+        ["1 attempt", "2 attempts", "3 attempts"]
+    )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# ---------------- GAME CONFIG ----------------
+level_config = {
+    "🟢 Easy": {"max": 20, "attempts": 6, "time": 20},
+    "🟡 Medium": {"max": 50, "attempts": 4, "time": 15},
+    "🔴 Hard": {"max": 100, "attempts": 3, "time": 10},
+}
 
 brag_map = {
     "1 attempt": 1,
     "2 attempts": 2,
-    "3 attempts": 3
+    "3 attempts": 3,
 }
 
-level_config = {
-    "🟢 Easy": {"max": 20, "attempts": 3, "time": 15},
-    "🟡 Medium": {"max": 50, "attempts": 2, "time": 10},
-    "🔴 Hard": {"max": 100, "attempts": 1, "time": 5},
-}
-
+# ---------------- START GAME ----------------
 if st.button("Start Game 🚀"):
     if nickname.strip() == "":
-        st.warning("Nickname is required.")
+        st.warning("Please enter a nickname.")
     else:
         config = level_config[level]
         st.session_state.max_num = config["max"]
@@ -96,14 +140,14 @@ if st.button("Start Game 🚀"):
         st.session_state.game_over = False
         st.session_state.started = True
         st.session_state.nickname = nickname
-        st.session_state.level = level
         st.session_state.avatar = avatar
+        st.session_state.level = level
         st.session_state.brag_attempts = brag_map[brag]
 
         st.success(
-            f"{level} | Range: 1–{config['max']} | "
-            f"Allowed attempts: {config['attempts']} | "
-            f"You bragged: {st.session_state.brag_attempts} attempt(s)"
+            f"{level} | Range 1–{config['max']} | "
+            f"{config['attempts']} attempts | "
+            f"{config['time']}s per attempt"
         )
 
 # ---------------- GAME PLAY ----------------
@@ -113,121 +157,138 @@ if st.session_state.started and not st.session_state.game_over:
         st.session_state.time_limit - (time.time() - st.session_state.turn_start)
     )
 
-    st.write(f"⏳ Time left: **{max(0, remaining_time)} seconds**")
+    with st.container():
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
 
-    # ⏰ TIME UP = INSTANT LOSS
-    if remaining_time <= 0:
-        st.markdown(
-            "<div class='shake'>⏰ TIME UP! GAME OVER 😢</div>",
-            unsafe_allow_html=True
-        )
-
+        st.subheader("🎮 Game On")
+        st.write(f"⏳ Time left: **{max(0, remaining_time)} seconds**")
         st.write(
-            f"😂 You bragged about winning in "
-            f"{st.session_state.brag_attempts} attempt(s)… and time beat you."
+            f"Attempts used: {st.session_state.attempts} / "
+            f"{st.session_state.allowed_attempts}"
         )
 
-        pd.DataFrame([{
-            "Nickname": st.session_state.nickname,
-            "Level": st.session_state.level,
-            "Attempts": "Timed Out ⏰",
-            "Time(s)": "-"
-        }]).to_csv(
-            LEADERBOARD_FILE, mode="a", header=False, index=False
-        )
+        if remaining_time <= 0:
+            st.markdown(
+                "<div class='shake'>⏰ TIME UP! GAME OVER 😢</div>",
+                unsafe_allow_html=True
+            )
 
-        st.session_state.game_over = True
+            st.write(
+                f"😂 You bragged about "
+                f"{st.session_state.brag_attempts} attempt(s)… bold."
+            )
 
-    if not st.session_state.game_over:
-        guess = st.number_input(
-            "Enter your guess",
-            min_value=1,
-            max_value=st.session_state.max_num,
-            step=1
-        )
+            pd.DataFrame([{
+                "Player": f"{st.session_state.avatar} {st.session_state.nickname}",
+                "Level": st.session_state.level,
+                "Attempts": "Timed Out ⏰",
+                "Time(s)": "-"
+            }]).to_csv(
+                LEADERBOARD_FILE, mode="a", header=False, index=False
+            )
 
-        if st.button("Submit Guess 🎯"):
-            st.session_state.attempts += 1
-            st.session_state.turn_start = time.time()
+            st.session_state.game_over = True
 
-            if guess < st.session_state.number:
-                st.warning("Too low 👇")
-            elif guess > st.session_state.number:
-                st.warning("Too high 👆")
-            else:
-                total_time = round(time.time() - st.session_state.start_time, 2)
+        if not st.session_state.game_over:
+            guess = st.number_input(
+                "Your guess",
+                min_value=1,
+                max_value=st.session_state.max_num,
+                step=1
+            )
 
-                st.markdown(
-                    f"<div class='glow'>✨ {nickname} WON! ✨</div>",
-                    unsafe_allow_html=True
-                )
-                st.balloons()
+            if st.button("Submit Guess 🎯"):
+                st.session_state.attempts += 1
+                st.session_state.turn_start = time.time()
 
-                # 🎭 BRAG CHECK
-                if st.session_state.attempts <= st.session_state.brag_attempts:
-                    st.write("😎 You backed up your brag!")
+                if guess < st.session_state.number:
+                    st.warning("Too low 👇")
+                elif guess > st.session_state.number:
+                    st.warning("Too high 👆")
                 else:
-                    st.write(
-                        f"😂 You bragged about "
-                        f"{st.session_state.brag_attempts} attempt(s)… "
-                        f"but needed {st.session_state.attempts}!"
+                    total_time = round(
+                        time.time() - st.session_state.start_time, 2
                     )
 
-                pd.DataFrame([{
-                    "Nickname": nickname,
-                    "Level": level,
-                    "Attempts": st.session_state.attempts,
-                    "Time(s)": total_time
-                }]).to_csv(
-                    LEADERBOARD_FILE, mode="a", header=False, index=False
-                )
+                    st.markdown(
+                        f"<div class='glow'>✨ {nickname} WON! ✨</div>",
+                        unsafe_allow_html=True
+                    )
+                    st.balloons()
 
-                st.session_state.game_over = True
+                    if st.session_state.attempts <= st.session_state.brag_attempts:
+                        st.success("😎 You backed up your brag!")
+                    else:
+                        st.warning(
+                            f"😂 You said "
+                            f"{st.session_state.brag_attempts} attempt(s)… "
+                            f"but needed {st.session_state.attempts}."
+                        )
 
-            if (
-                st.session_state.attempts >= st.session_state.allowed_attempts
-                and not st.session_state.game_over
-            ):
-                st.markdown(
-                    "<div class='shake'>😢 No attempts left. GAME OVER!</div>",
-                    unsafe_allow_html=True
-                )
+                    pd.DataFrame([{
+                        "Player": f"{st.session_state.avatar} {nickname}",
+                        "Level": level,
+                        "Attempts": st.session_state.attempts,
+                        "Time(s)": total_time
+                    }]).to_csv(
+                        LEADERBOARD_FILE, mode="a", header=False, index=False
+                    )
 
-                st.write(
-                    f"😂 You bragged about winning in "
-                    f"{st.session_state.brag_attempts} attempt(s)… bold move."
-                )
+                    st.session_state.game_over = True
 
-                pd.DataFrame([{
-                    "Nickname": f"{st.session_state.avatar} {nickname}",
-                    "Level": level,
-                    "Attempts": "Failed",
-                    "Time(s)": "-"
-                }]).to_csv(
-                    LEADERBOARD_FILE, mode="a", header=False, index=False
-                )
+                if (
+                    st.session_state.attempts >= st.session_state.allowed_attempts
+                    and not st.session_state.game_over
+                ):
+                    st.markdown(
+                        "<div class='shake'>😢 No attempts left. GAME OVER!</div>",
+                        unsafe_allow_html=True
+                    )
 
-                st.session_state.game_over = True
+                    st.write(
+                        f"😂 You bragged about "
+                        f"{st.session_state.brag_attempts} attempt(s)… interesting."
+                    )
+
+                    pd.DataFrame([{
+                        "Player": f"{st.session_state.avatar} {nickname}",
+                        "Level": level,
+                        "Attempts": "Failed",
+                        "Time(s)": "-"
+                    }]).to_csv(
+                        LEADERBOARD_FILE, mode="a", header=False, index=False
+                    )
+
+                    st.session_state.game_over = True
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # ---------------- LEADERBOARD ----------------
-st.subheader("🏆 Leaderboard")
+with st.container():
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
 
-df = pd.read_csv(LEADERBOARD_FILE)
+    st.subheader("🏆 Leaderboard")
 
-df["RankScore"] = df["Attempts"].apply(
-    lambda x: 99 if isinstance(x, str) else int(x)
-)
+    df = pd.read_csv(LEADERBOARD_FILE)
 
-df = df.sort_values(by=["Level", "RankScore", "Time(s)"], ascending=True)
-df["Position"] = range(1, len(df) + 1)
+    df["RankScore"] = df["Attempts"].apply(
+        lambda x: 99 if isinstance(x, str) else int(x)
+    )
 
-st.dataframe(
-    df[["Position", "Nickname", "Level", "Attempts", "Time(s)"]],
-    use_container_width=True
-)
+    df = df.sort_values(
+        by=["Level", "RankScore", "Time(s)"],
+        ascending=True
+    )
+    df["Position"] = range(1, len(df) + 1)
+
+    st.dataframe(
+        df[["Position", "Player", "Level", "Attempts", "Time(s)"]],
+        use_container_width=True
+    )
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # ---------------- RESTART ----------------
 if st.session_state.started:
     if st.button("Restart Game 🔄"):
         st.session_state.started = False
-
