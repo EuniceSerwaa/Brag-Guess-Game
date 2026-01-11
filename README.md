@@ -27,5 +27,3 @@ Players choose a difficulty level, brag about how quickly they can win, and then
 ## Why This Project
 This project focuses on user experience, game logic, fairness, and interactivity rather than just code. It demonstrates how Python can be used to build engaging web applications beyond data analysis.
 
-## Disclaimer
-This game is built for fun and demonstration purposes.
