@@ -54,6 +54,10 @@ if "started" not in st.session_state:
 st.subheader("👤 Player Setup")
 
 nickname = st.text_input("Enter your nickname")
+avatar = st.selectbox(
+    "Choose your avatar",
+    ["😎", "🔥", "🎯", "👑", "🐉", "🧠"]
+)
 
 level = st.selectbox(
     "Choose Difficulty",
@@ -93,6 +97,7 @@ if st.button("Start Game 🚀"):
         st.session_state.started = True
         st.session_state.nickname = nickname
         st.session_state.level = level
+        st.session_state.avatar = avatar
         st.session_state.brag_attempts = brag_map[brag]
 
         st.success(
@@ -194,7 +199,7 @@ if st.session_state.started and not st.session_state.game_over:
                 )
 
                 pd.DataFrame([{
-                    "Nickname": nickname,
+                    "Nickname": f"{st.session_state.avatar} {nickname}",
                     "Level": level,
                     "Attempts": "Failed",
                     "Time(s)": "-"
@@ -225,3 +230,4 @@ st.dataframe(
 if st.session_state.started:
     if st.button("Restart Game 🔄"):
         st.session_state.started = False
+
