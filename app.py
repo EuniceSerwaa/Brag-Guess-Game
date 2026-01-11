@@ -228,8 +228,10 @@ if st.session_state.started and not st.session_state.game_over:
                     pd.DataFrame([{
                         "Player": f"{st.session_state.avatar} {nickname}",
                         "Level": level,
+                        "Result": "Won 🏆",
                         "Attempts": st.session_state.attempts,
-                        "Time(s)": total_time
+
+                 "Time(s)": total_time
                     }]).to_csv(
                         LEADERBOARD_FILE, mode="a", header=False, index=False
                     )
@@ -266,29 +268,41 @@ if st.session_state.started and not st.session_state.game_over:
 # ---------------- LEADERBOARD ----------------
 with st.container():
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-
     st.subheader("🏆 Leaderboard")
 
     df = pd.read_csv(LEADERBOARD_FILE)
 
-    df["RankScore"] = df["Attempts"].apply(
-        lambda x: 99 if isinstance(x, str) else int(x)
-    )
+    # --- Rank Logic ---
+    def rank_score(row):
+        if row["Result"].startswith("Won"):
+            return 0
+        elif row["Result"].startswith("Timed"):
+            return 1
+        else:
+            return 2
+
+    df["ResultRank"] = df.apply(rank_score, axis=1)
+
+    df["TimeRank"] = df["Time(s)"].fillna(9999)
+    df["AttemptRank"] = df["Attempts"].fillna(99)
 
     df = df.sort_values(
-        by=["Level", "RankScore", "Time(s)"],
+        by=["ResultRank", "TimeRank", "AttemptRank"],
         ascending=True
-    )
-    df["Position"] = range(1, len(df) + 1)
+    ).reset_index(drop=True)
+
+    df["Position"] = df.index + 1
 
     st.dataframe(
-        df[["Position", "Player", "Level", "Attempts", "Time(s)"]],
+        df[["Position", "Player", "Level", "Result", "Attempts", "Time(s)"]],
         use_container_width=True
     )
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+
 # ---------------- RESTART ----------------
 if st.session_state.started:
     if st.button("Restart Game 🔄"):
         st.session_state.started = False
+
