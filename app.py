@@ -253,15 +253,16 @@ with st.container():
 
     df = pd.read_csv(LEADERBOARD_FILE)
 
-    def rank_key(row):
-        if row["Result"].startswith("Won"):
-            return 0
-        elif row["Result"].startswith("Timed"):
-            return 1
-        else:
-            return 2
+    # Ensure correct types
+    df["Result"] = df["Result"].astype(str)
+    df["Attempts"] = pd.to_numeric(df["Attempts"], errors="coerce")
+    df["Time(s)"] = pd.to_numeric(df["Time(s)"], errors="coerce")
 
-    df["ResultRank"] = df.apply(rank_key, axis=1)
+    # Ranking logic (NO apply)
+    df["ResultRank"] = 2
+    df.loc[df["Result"].str.startswith("Won"), "ResultRank"] = 0
+    df.loc[df["Result"].str.startswith("Timed"), "ResultRank"] = 1
+
     df["TimeRank"] = df["Time(s)"].fillna(9999)
     df["AttemptRank"] = df["Attempts"].fillna(99)
 
