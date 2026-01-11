@@ -4,7 +4,7 @@ Brag & Guess is a fun, competitive number-guessing game built with Python and St
 
 Players choose a difficulty level, brag about how quickly they can win, and then race against the clock to prove it. If time runs out or attempts are exhausted, the game ends instantly and the result is recorded.
 
-live App : [https://brag-guess-game-gwfsrgksvdqfzzecjhlyb4.streamlit.app/](https://brag-guess-game-hjzrzafmh6fnzh4q5bta2p.streamlit.app/)
+live App : https://brag-guess-game-2dhywsjeccdhdg9lp5eqf9.streamlit.app/
 
 ## How the Game Works
 - Enter a nickname
