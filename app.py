@@ -14,10 +14,7 @@ st.set_page_config(
 # ---------------- STYLES ----------------
 st.markdown("""
 <style>
-body {
-    background-color: #0f172a;
-    color: #e5e7eb;
-}
+body { background-color: #0f172a; color: #e5e7eb; }
 
 .card {
     background: #020617;
@@ -68,19 +65,20 @@ body {
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- LEADERBOARD FILE ----------------
+# ---------------- LEADERBOARD ----------------
 LEADERBOARD_FILE = "leaderboard.csv"
+LEADERBOARD_COLUMNS = ["Player", "Level", "Result", "Attempts", "Time(s)"]
 
 if not os.path.exists(LEADERBOARD_FILE):
-    pd.DataFrame(
-        columns=["Player", "Level", "Attempts", "Time(s)"]
-    ).to_csv(LEADERBOARD_FILE, index=False)
+    pd.DataFrame(columns=LEADERBOARD_COLUMNS).to_csv(
+        LEADERBOARD_FILE, index=False
+    )
 
 # ---------------- SESSION STATE ----------------
 if "started" not in st.session_state:
     st.session_state.started = False
 
-# ---------------- LANDING ----------------
+# ---------------- TITLE ----------------
 with st.container():
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.markdown("<div class='title'>🎯 Brag & Guess</div>", unsafe_allow_html=True)
@@ -97,7 +95,7 @@ with st.container():
     st.subheader("👤 Player Setup")
 
     nickname = st.text_input("Nickname")
-    avatar = st.selectbox("Choose your avatar", ["😎", "🔥", "🎯", "👑", "🐉", "🧠"])
+    avatar = st.selectbox("Avatar", ["😎", "🔥", "🎯", "👑", "🐉", "🧠"])
 
     level = st.selectbox(
         "Difficulty",
@@ -118,36 +116,31 @@ level_config = {
     "🔴 Hard": {"max": 100, "attempts": 3, "time": 10},
 }
 
-brag_map = {
-    "1 attempt": 1,
-    "2 attempts": 2,
-    "3 attempts": 3,
-}
+brag_map = {"1 attempt": 1, "2 attempts": 2, "3 attempts": 3}
 
 # ---------------- START GAME ----------------
 if st.button("Start Game 🚀"):
     if nickname.strip() == "":
         st.warning("Please enter a nickname.")
     else:
-        config = level_config[level]
-        st.session_state.max_num = config["max"]
-        st.session_state.allowed_attempts = config["attempts"]
-        st.session_state.time_limit = config["time"]
-        st.session_state.number = random.randint(1, config["max"])
+        cfg = level_config[level]
+        st.session_state.number = random.randint(1, cfg["max"])
+        st.session_state.allowed_attempts = cfg["attempts"]
+        st.session_state.time_limit = cfg["time"]
         st.session_state.attempts = 0
         st.session_state.start_time = time.time()
         st.session_state.turn_start = time.time()
-        st.session_state.game_over = False
         st.session_state.started = True
-        st.session_state.nickname = nickname
-        st.session_state.avatar = avatar
+        st.session_state.game_over = False
+        st.session_state.player = f"{avatar} {nickname}"
         st.session_state.level = level
-        st.session_state.brag_attempts = brag_map[brag]
+        st.session_state.brag = brag_map[brag]
+        st.session_state.max_num = cfg["max"]
 
         st.success(
-            f"{level} | Range 1–{config['max']} | "
-            f"{config['attempts']} attempts | "
-            f"{config['time']}s per attempt"
+            f"{level} | Range 1–{cfg['max']} | "
+            f"{cfg['attempts']} attempts | "
+            f"{cfg['time']}s per attempt"
         )
 
 # ---------------- GAME PLAY ----------------
@@ -161,9 +154,9 @@ if st.session_state.started and not st.session_state.game_over:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
 
         st.subheader("🎮 Game On")
-        st.write(f"⏳ Time left: **{max(0, remaining_time)} seconds**")
+        st.write(f"⏳ Time left: **{max(0, remaining_time)}s**")
         st.write(
-            f"Attempts used: {st.session_state.attempts} / "
+            f"Attempts: {st.session_state.attempts} / "
             f"{st.session_state.allowed_attempts}"
         )
 
@@ -173,16 +166,12 @@ if st.session_state.started and not st.session_state.game_over:
                 unsafe_allow_html=True
             )
 
-            st.write(
-                f"😂 You bragged about "
-                f"{st.session_state.brag_attempts} attempt(s)… bold."
-            )
-
             pd.DataFrame([{
-                "Player": f"{st.session_state.avatar} {st.session_state.nickname}",
+                "Player": st.session_state.player,
                 "Level": st.session_state.level,
-                "Attempts": "Timed Out ⏰",
-                "Time(s)": "-"
+                "Result": "Timed Out ⏰",
+                "Attempts": st.session_state.attempts,
+                "Time(s)": None
             }]).to_csv(
                 LEADERBOARD_FILE, mode="a", header=False, index=False
             )
@@ -211,27 +200,23 @@ if st.session_state.started and not st.session_state.game_over:
                     )
 
                     st.markdown(
-                        f"<div class='glow'>✨ {nickname} WON! ✨</div>",
+                        "<div class='glow'>✨ YOU WON! ✨</div>",
                         unsafe_allow_html=True
                     )
                     st.balloons()
 
-                    if st.session_state.attempts <= st.session_state.brag_attempts:
-                        st.success("😎 You backed up your brag!")
-                    else:
+                    if st.session_state.attempts > st.session_state.brag:
                         st.warning(
-                            f"😂 You said "
-                            f"{st.session_state.brag_attempts} attempt(s)… "
+                            f"😂 You bragged {st.session_state.brag} attempt(s)… "
                             f"but needed {st.session_state.attempts}."
                         )
 
                     pd.DataFrame([{
-                        "Player": f"{st.session_state.avatar} {nickname}",
-                        "Level": level,
+                        "Player": st.session_state.player,
+                        "Level": st.session_state.level,
                         "Result": "Won 🏆",
                         "Attempts": st.session_state.attempts,
-
-                 "Time(s)": total_time
+                        "Time(s)": total_time
                     }]).to_csv(
                         LEADERBOARD_FILE, mode="a", header=False, index=False
                     )
@@ -243,20 +228,16 @@ if st.session_state.started and not st.session_state.game_over:
                     and not st.session_state.game_over
                 ):
                     st.markdown(
-                        "<div class='shake'>😢 No attempts left. GAME OVER!</div>",
+                        "<div class='shake'>😢 No attempts left!</div>",
                         unsafe_allow_html=True
                     )
 
-                    st.write(
-                        f"😂 You bragged about "
-                        f"{st.session_state.brag_attempts} attempt(s)… interesting."
-                    )
-
                     pd.DataFrame([{
-                        "Player": f"{st.session_state.avatar} {nickname}",
-                        "Level": level,
-                        "Attempts": "Failed",
-                        "Time(s)": "-"
+                        "Player": st.session_state.player,
+                        "Level": st.session_state.level,
+                        "Result": "Failed ❌",
+                        "Attempts": st.session_state.attempts,
+                        "Time(s)": None
                     }]).to_csv(
                         LEADERBOARD_FILE, mode="a", header=False, index=False
                     )
@@ -272,8 +253,7 @@ with st.container():
 
     df = pd.read_csv(LEADERBOARD_FILE)
 
-    # --- Rank Logic ---
-    def rank_score(row):
+    def rank_key(row):
         if row["Result"].startswith("Won"):
             return 0
         elif row["Result"].startswith("Timed"):
@@ -281,8 +261,7 @@ with st.container():
         else:
             return 2
 
-    df["ResultRank"] = df.apply(rank_score, axis=1)
-
+    df["ResultRank"] = df.apply(rank_key, axis=1)
     df["TimeRank"] = df["Time(s)"].fillna(9999)
     df["AttemptRank"] = df["Attempts"].fillna(99)
 
@@ -300,9 +279,7 @@ with st.container():
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-
 # ---------------- RESTART ----------------
 if st.session_state.started:
     if st.button("Restart Game 🔄"):
         st.session_state.started = False
-
